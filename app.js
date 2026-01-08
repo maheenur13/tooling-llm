@@ -1,3 +1,4 @@
+import readline from "node:readline/promises";
 import Groq from "groq-sdk";
 import { tavily } from "@tavily/core";
 
@@ -5,50 +6,62 @@ const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 //
 export async function main() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
   const messages = [
     {
       role: "system",
-      content: `You are a smart personal assistant who answers the asked questions. Always respond in a single short sentence. No tables, no bullet points, no markdown formatting.`,
-    },
-
-    {
-      role: "user",
-      content: "When iphone 17 launched?",
+      content: `You are a smart personal assistant who answers the asked questions. Response should be perfectly formatted. Be polite always.`,
     },
   ];
 
   while (true) {
-    const chatCompletion = await getGroqChatCompletion(messages);
+    const question = await rl.question("You: ");
 
-    messages.push(chatCompletion.choices[0].message);
-
-    const toolCalls = chatCompletion.choices[0]?.message.tool_calls;
-    if (!toolCalls) {
-      console.log(
-        `AI Assistant: ${chatCompletion.choices[0]?.message.content}`
-      );
-
+    if (question === "bye") {
       break;
     }
-    for (const tool of toolCalls) {
-      const functionName = tool.function.name;
-      const functionParams = tool.function.arguments;
-      console.log(functionParams);
 
-      if (functionName === "web_search") {
-        console.log("calling web search...");
+    messages.push({
+      role: "user",
+      content: question,
+    });
+    while (true) {
+      const chatCompletion = await getGroqChatCompletion(messages);
 
-        const toolResult = await web_search(JSON.parse(functionParams));
+      messages.push(chatCompletion.choices[0].message);
 
-        messages.push({
-          tool_call_id: tool.id,
-          role: "tool",
-          name: functionName,
-          content: toolResult,
-        });
+      const toolCalls = chatCompletion.choices[0]?.message.tool_calls;
+      if (!toolCalls) {
+        console.log(
+          `AI Assistant: ${chatCompletion.choices[0]?.message.content}`
+        );
+
+        break;
+      }
+      for (const tool of toolCalls) {
+        const functionName = tool.function.name;
+        const functionParams = tool.function.arguments;
+
+        if (functionName === "web_search") {
+          console.log("calling web search...");
+
+          const toolResult = await web_search(JSON.parse(functionParams));
+
+          messages.push({
+            tool_call_id: tool.id,
+            role: "tool",
+            name: functionName,
+            content: toolResult,
+          });
+        }
       }
     }
   }
+
+  rl.close();
 
   // Print the completion returned by the LLM.
   // console.log(chatCompletion.choices[0]?.message?.tool_calls);
