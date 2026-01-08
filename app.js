@@ -16,63 +16,39 @@ export async function main() {
       content: "When iphone 17 launched?",
     },
   ];
-  const chatCompletion = await getGroqChatCompletion(messages);
-  console.log(1, chatCompletion.choices[0].message);
 
-  messages.push(chatCompletion.choices[0].message);
+  while (true) {
+    const chatCompletion = await getGroqChatCompletion(messages);
 
-  const toolCalls = chatCompletion.choices[0]?.message.tool_calls;
-  if (!toolCalls) {
-    console.log(`AI: ${chatCompletion.choices[0]?.message.content}`);
+    messages.push(chatCompletion.choices[0].message);
 
-    return;
-  }
-  for (const tool of toolCalls) {
-    const functionName = tool.function.name;
-    const functionParams = tool.function.arguments;
-    console.log(functionParams);
+    const toolCalls = chatCompletion.choices[0]?.message.tool_calls;
+    if (!toolCalls) {
+      console.log(
+        `AI Assistant: ${chatCompletion.choices[0]?.message.content}`
+      );
 
-    if (functionName === "web_search") {
-      console.log("calling web search...");
+      break;
+    }
+    for (const tool of toolCalls) {
+      const functionName = tool.function.name;
+      const functionParams = tool.function.arguments;
+      console.log(functionParams);
 
-      const toolResult = await web_search(JSON.parse(functionParams));
+      if (functionName === "web_search") {
+        console.log("calling web search...");
 
-      messages.push({
-        tool_call_id: tool.id,
-        role: "tool",
-        name: functionName,
-        content: toolResult,
-      });
+        const toolResult = await web_search(JSON.parse(functionParams));
+
+        messages.push({
+          tool_call_id: tool.id,
+          role: "tool",
+          name: functionName,
+          content: toolResult,
+        });
+      }
     }
   }
-  const chatCompletion2 = await groq.chat.completions.create({
-    temperature: 0,
-    messages,
-    model: "openai/gpt-oss-20b",
-    tools: [
-      {
-        type: "function",
-        function: {
-          name: "web_search",
-          description: `Search the latest information and realtime data on the internet.`,
-          parameters: {
-            // JSON Schema object
-            type: "object",
-            properties: {
-              query: {
-                type: "string",
-                description: "The search query to perform search on.",
-              },
-            },
-            required: ["query"],
-          },
-        },
-      },
-    ],
-    tool_choice: "auto",
-  });
-  // const chatCompletion2 = await getGroqChatCompletion(messages);
-  console.log(chatCompletion2.choices[0].message.content);
 
   // Print the completion returned by the LLM.
   // console.log(chatCompletion.choices[0]?.message?.tool_calls);
