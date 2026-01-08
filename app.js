@@ -8,10 +8,7 @@ export async function main() {
   const messages = [
     {
       role: "system",
-      content: `You are a smart personal assistant who answers the asked questions.
-      You have access to following tools:
-      1. web_search({query}:{query:string}) // Search the latest information and realtime data on the internet.
-      `,
+      content: `You are a smart personal assistant who answers the asked questions. Always respond in a single short sentence. No tables, no bullet points, no markdown formatting.`,
     },
 
     {
@@ -49,9 +46,9 @@ export async function main() {
     }
   }
   const chatCompletion2 = await groq.chat.completions.create({
-    // temperature: 0,
+    temperature: 0,
     messages,
-    model: "llama-3.3-70b-versatile",
+    model: "openai/gpt-oss-20b",
     tools: [
       {
         type: "function",
@@ -83,9 +80,9 @@ export async function main() {
 
 export async function getGroqChatCompletion(messages) {
   return groq.chat.completions.create({
-    // temperature: 0,
+    temperature: 0,
     messages,
-    model: "llama-3.3-70b-versatile",
+    model: "openai/gpt-oss-20b",
     tools: [
       {
         type: "function",
