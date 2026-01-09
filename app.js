@@ -13,7 +13,10 @@ export async function main() {
   const messages = [
     {
       role: "system",
-      content: `You are a smart personal assistant who answers the asked questions. Response should be perfectly formatted. Be polite always.`,
+      content: `You are a smart personal assistant who answers the asked questions. You should provide the latest and most recent data from internet. Response should be perfectly formatted, no markdown format. Be polite always.
+      Some additional information:
+      current datetime: ${new Date().toUTCString()}
+      `,
     },
   ];
 
